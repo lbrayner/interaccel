@@ -1,0 +1,5 @@
+*.o
+accel
+*.exe
+*.dll
+*.lib
