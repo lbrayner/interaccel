@@ -1,5 +1,6 @@
 TARGET = accel.exe
-LIBS = -L libs/x64 -l interception
+LIBS = -l Qt5Core -L libs/x64 -l interception
+INCLUDE = -I /usr/include/qt5 -I /usr/include/qt5/QtCore
 CC = g++
 CFLAGS = -g -Wall
 
@@ -12,12 +13,12 @@ OBJECTS = $(patsubst %.cpp, %.o, $(wildcard *.cpp))
 HEADERS = $(wildcard *.h)
 
 %.o: %.cpp $(HEADERS)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -Wall $(LIBS) -o $@
+	$(CC) $(OBJECTS) -Wall $(INCLUDE) $(LIBS) -o $@
 
 clean:
 	-rm -f *.o
