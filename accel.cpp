@@ -4,37 +4,8 @@
 #include <math.h>
 #include <iostream>
 
-#include <QCoreApplication>
-#include <QObject>
-#include <QDebug>
-#include <QFileSystemWatcher>
-#include <QDirIterator>
-
-void listDirectoryContents( const QString& dir ) noexcept
-{
-    QFileSystemWatcher watcher;
-    watcher.addPath( dir );
-
-    QObject::connect( &watcher, &QFileSystemWatcher::directoryChanged,
-                      []( const QString& path )
-    {
-        QDirIterator it( path,
-                        { "*.txt" },        // Filter: *.txt
-                        QDir::Files );   // Files only
-
-        while ( it.hasNext() )              // List all txt files
-        {                                   // on console
-            qDebug() << it.next();
-        }
-    });
-}
-
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
-    const QString dir { "C:/Users/leona" };
-    listDirectoryContents( dir );
-
     InterceptionContext context;
     InterceptionDevice device;
     InterceptionStroke stroke;
