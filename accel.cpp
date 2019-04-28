@@ -5,6 +5,9 @@
 #include <iostream>
 
 #include "settings.h"
+#include <QObject>
+#include <QCoreApplication>
+#include <QFileSystemWatcher>
 
 HANDLE get_console()
 {
@@ -39,7 +42,7 @@ HANDLE get_console()
     return hConsole;
 }
 
-Settings const * const read_settings(HANDLE const hConsole)
+Settings const * const read_settings(HANDLE const hConsole, char const * const filename)
 {
     bool garbageFile = 0;
     /* Settings const * const settings = new Settings; */
@@ -50,7 +53,7 @@ Settings const * const read_settings(HANDLE const hConsole)
     double variableValue;
 
 
-    if ((fp = fopen("settings.txt", "r+")) == NULL) {
+    if ((fp = fopen(filename, "r+")) == NULL) {
         SetConsoleTextAttribute(hConsole, 0x04);
         printf("* Cannot read from settings file. Using defaults.\n");
         SetConsoleTextAttribute(hConsole, 0x08);
@@ -145,7 +148,7 @@ Settings const * const read_settings(HANDLE const hConsole)
     return builder.hbuild();
 }
 
-void accel(Settings const &settings, HANDLE const hConsole)
+void accel(Settings const & settings, HANDLE const hConsole)
 {
     InterceptionContext context;
     InterceptionDevice device;
@@ -167,18 +170,6 @@ void accel(Settings const &settings, HANDLE const hConsole)
         power,
         carryX = 0,
         carryY = 0,
-        /* var_sens = 1, */
-        /* var_accel = 0, */
-        /* var_senscap = 0, */
-        /* var_offset = 0, */
-        /* var_power = 2, */
-        /* var_preScaleX = 1, */
-        /* var_preScaleY = 1, */
-        /* var_postScaleX = 1, */
-        /* var_postScaleY = 1, */
-        /* var_angle = 0, */
-        /* var_angleSnap = 0, */
-        /* var_speedCap = 0, */
         pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406,
         hypot,
         angle,
@@ -421,11 +412,24 @@ void accel(Settings const &settings, HANDLE const hConsole)
 
 int main(int argc, char *argv[])
 {
+    QCoreApplication a(argc, argv);
+    QString const filename { "settings.txt" };
+
+    QFileSystemWatcher *watcher = new QFileSystemWatcher(&a);
+    watcher->addPath(filename);
+
     HANDLE hConsole = get_console();
 
-    Settings const * const settings = read_settings(hConsole);
+    QObject::connect(watcher, &QFileSystemWatcher::fileChanged,
+        [hConsole]( const QString& path )
+        {
+            Settings const * const settings = read_settings(hConsole,path.toLocal8Bit().data());
+            accel(*settings, hConsole);
+            delete settings;
+        });
 
-    accel(*settings, hConsole);
+    /* watcher->fileChanged(filename); */
 
-    return 0;
+    std::cout << "Enter main event loop now" << std::endl;
+    return a.exec();
 }
