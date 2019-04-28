@@ -4,3 +4,4 @@ accel
 *.exe
 *.dll
 *.lib
+settings.txt
