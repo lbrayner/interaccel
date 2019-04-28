@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QThread>
 #include "settings.h"
+#include "interception.h"
 #include "windows.h"
 
 class Accel: public QObject
@@ -33,6 +34,7 @@ class Accel::WorkerThread: public QThread
 
 private:
 
+    InterceptionContext get_context();
     void accel();
     bool die_;
     Settings const settings;

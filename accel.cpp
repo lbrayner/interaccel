@@ -1,7 +1,6 @@
 #include "accel.h"
 #include <iostream>
 #include <math.h>
-#include "interception.h"
 #include "utils.h"
 #include <QDebug>
 
@@ -59,7 +58,7 @@ void Accel::WorkerThread::die()
     die_ = true;
 }
 
-InterceptionContext get_context()
+InterceptionContext Accel::WorkerThread::get_context()
 {
     InterceptionContext context = NULL;
     context = interception_create_context();
