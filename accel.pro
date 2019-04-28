@@ -7,6 +7,7 @@ HEADERS += interception.h
 HEADERS += settings.h
 HEADERS += utils.h
 SOURCES += accel.cpp
+SOURCES += main.cpp
 SOURCES += settings.cpp
 SOURCES += utils.cpp
 unix:LIBS += -L libs/x64 -l interception
