@@ -3,20 +3,22 @@
 #include <math.h>
 #include "interception.h"
 #include "utils.h"
+#include <QDebug>
 
 Accel::~Accel()
 {
     stop();
 }
 
-Accel::Accel(HANDLE hConsole, QObject *parent):
-    hConsole(hConsole), QObject(parent)
+Accel::Accel(HANDLE hConsole, QString const process_name, QObject *parent):
+    hConsole(hConsole), process_name(process_name), QObject(parent)
 {
 }
+
 void Accel::go(Settings const settings)
 {
     stop();
-    thread = new WorkerThread(settings,this->hConsole,this);
+    thread = new WorkerThread(settings,this->hConsole,this->process_name,this);
     thread->start();
 }
 
@@ -30,10 +32,26 @@ void Accel::stop()
     }
 }
 
-Accel::WorkerThread::WorkerThread(Settings const settings, HANDLE hConsole, QObject *parent):
-    settings(settings), hConsole(hConsole), QThread(parent)
+void Accel::WorkerThread::query_processes()
+{
+    bool const is_it = is_process_running(process_name.toLocal8Bit().data());
+    process_is_running = is_it;
+}
+
+Accel::WorkerThread::WorkerThread(Settings const settings, HANDLE hConsole,
+        QString const process_name, QObject *parent):
+    settings(settings), hConsole(hConsole), process_name(process_name), QThread(parent)
 {
     die_ = false;
+    process_is_running = false;
+
+    query_processes();
+
+    timer = new QTimer(0);
+    timer->setInterval(1000);
+    connect(this, SIGNAL(started()), timer, SLOT(start()));
+    connect(this, SIGNAL(finished()), timer, SLOT(stop()));
+    connect(timer, SIGNAL(timeout()), this, SLOT(query_processes()));
 }
 
 void Accel::WorkerThread::die()
@@ -41,19 +59,23 @@ void Accel::WorkerThread::die()
     die_ = true;
 }
 
+InterceptionContext get_context()
+{
+    InterceptionContext context = NULL;
+    context = interception_create_context();
+    interception_set_filter(context, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_MOVE);
+    return context;
+}
 
 void Accel::WorkerThread::accel()
 {
-    InterceptionContext context;
+    InterceptionContext context = NULL;
     InterceptionDevice device;
     InterceptionStroke stroke;
 
+    context = get_context();
+
     raise_process_priority();
-
-    context = interception_create_context();
-
-    // interception_set_filter(context, interception_is_keyboard, INTERCEPTION_FILTER_KEY_DOWN | INTERCEPTION_FILTER_KEY_UP);
-    interception_set_filter(context, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_MOVE);
 
     double
         frameTime_ms = 0,
@@ -91,7 +113,8 @@ void Accel::WorkerThread::accel()
     SetConsoleTextAttribute(hConsole, 0x08);
 
     if (!settings.fancy_output) {
-        printf("\n\nSet 'FancyOutput = 1' in settings.txt for realtime data\n(debug use only: may result in some latency)");
+        printf("\n\nSet 'FancyOutput = 1' in settings.txt for realtime"
+                "data\n(debug use only: may result in some latency)\n\n");
     }
 
 
@@ -100,8 +123,31 @@ void Accel::WorkerThread::accel()
     QueryPerformanceCounter(&oldFrameTime);
     QueryPerformanceFrequency(&PCfreq);
 
-    while (!die_ && interception_receive(context, device = interception_wait(context), &stroke, 1) > 0)
+    while (!die_)
     {
+        if(!process_is_running)
+        {
+            if(context != NULL)
+            {
+                interception_destroy_context(context);
+                context = NULL;
+                qDebug() << process_name << "is not running.";
+            }
+            QThread::msleep(500);
+            continue;
+        }
+        else
+        {
+            if(context == NULL)
+            {
+                context = get_context();
+                qDebug() << process_name << "is running!";
+            }
+        }
+
+        if(context == NULL
+            || interception_receive(context, device = interception_wait(context), &stroke, 1) <= 0)
+            continue;
 
         if (interception_is_mouse(device))
         {

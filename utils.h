@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 void raise_process_priority(void);
+int is_process_running(char const * const process_name);
 
 #ifdef __cplusplus
 }

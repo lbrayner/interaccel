@@ -2,6 +2,7 @@
 #define ACCEL_H
 
 #include <QObject>
+#include <QTimer>
 #include <QThread>
 #include "settings.h"
 #include "windows.h"
@@ -15,13 +16,15 @@ private:
     class WorkerThread;
     HANDLE hConsole;
     QThread * thread;
+    QString const process_name;
 
 public:
 
-    Accel(HANDLE hConsole, QObject *parent = 0);
+    Accel(HANDLE hConsole, QString const process_name, QObject *parent = 0);
     ~Accel();
     void go(Settings const settings);
     void stop();
+
 };
 
 class Accel::WorkerThread: public QThread
@@ -34,6 +37,9 @@ private:
     bool die_;
     Settings const settings;
     HANDLE hConsole;
+    QString const process_name;
+    QTimer * timer;
+    bool process_is_running;
 
     void run() override
     {
@@ -42,9 +48,13 @@ private:
 
 public:
 
-    WorkerThread(Settings const settings, HANDLE hConsole, QObject *parent = 0);
+    WorkerThread(Settings const settings, HANDLE hConsole,
+        QString const process_name, QObject *parent = 0);
     void die();
 
+private slots:
+
+    void query_processes();
 };
 
 #endif // ACCEL_H

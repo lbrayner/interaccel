@@ -143,9 +143,28 @@ void accel_go(HANDLE hConsole, Accel * const accel, QString const & path)
     delete settings;
 }
 
+QString make_usage(char const * const program_name)
+{
+    return QString("Usage: %1 PROGRAM_NAME").arg(program_name);
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
+    QStringList arguments = a.arguments();
+    QString const usage = make_usage(argv[0]);
+
+    if(arguments.size() != 2)
+    {
+        std::cerr << usage.toLocal8Bit().data() << std::endl;
+        return 1;
+    }
+
+    QString const program_name = a.arguments().at(1);
+
+    std::cout << "Watching out for " << program_name.toLocal8Bit().data()
+        << std::endl << std::endl;
+
     QString const filename { "settings.txt" };
 
     QFileSystemWatcher * const watcher = new QFileSystemWatcher(&a);
@@ -153,7 +172,7 @@ int main(int argc, char *argv[])
 
     HANDLE const hConsole = get_console();
 
-    Accel * const accel = new Accel(hConsole);
+    Accel * const accel = new Accel(hConsole,program_name);
 
     QObject::connect(watcher, &QFileSystemWatcher::fileChanged,
         [hConsole,accel]( const QString& path )
@@ -163,6 +182,7 @@ int main(int argc, char *argv[])
 
     accel_go(hConsole, accel, filename);
 
-    std::cout << "Enter main event loop now" << std::endl;
+    std::cout << "Enter main event loop now"
+        << std::endl << std::endl;
     return a.exec();
 }
