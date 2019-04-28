@@ -7,3 +7,4 @@ accel
 *.dll
 *.lib
 settings.txt
+*.stackdump

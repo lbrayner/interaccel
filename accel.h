@@ -13,27 +13,15 @@ class Accel: public QObject
 private:
 
     class WorkerThread;
-    void terminate();
-    /* Settings const settings; */
     HANDLE hConsole;
     QThread * thread;
 
 public:
 
-    /* Accel(Settings const settings, HANDLE hConsole, QObject *parent = 0); */
     Accel(HANDLE hConsole, QObject *parent = 0);
-    /* Accel(QObject *parent = 0); */
     ~Accel();
-
-/* signals: */
-
-/*     void signalStart(); */
-/*     void signalEnd(); */
-
-public slots:
-
-    void start(Settings const settings);
-    void end();
+    void go(Settings const settings);
+    void stop();
 };
 
 class Accel::WorkerThread: public QThread
@@ -43,7 +31,7 @@ class Accel::WorkerThread: public QThread
 private:
 
     void accel();
-    bool stop_;
+    bool die_;
     Settings const settings;
     HANDLE hConsole;
 
@@ -55,7 +43,7 @@ private:
 public:
 
     WorkerThread(Settings const settings, HANDLE hConsole, QObject *parent = 0);
-    void stop();
+    void die();
 
 };
 

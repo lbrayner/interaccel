@@ -4,62 +4,41 @@
 #include "interception.h"
 #include "utils.h"
 
-void Accel::terminate()
-{
-    thread->quit();
-    thread->wait();
-}
-
 Accel::~Accel()
 {
-    terminate();
+    stop();
 }
-
-/* Accel::Accel(QObject *parent): QObject(parent) */
-/* { */
-/* } */
-
-/* Accel::Accel(Settings const settings, HANDLE hConsole, QObject *parent): */
-/*     settings(settings), hConsole(hConsole), QObject(parent) */
-/* { */
-/*     thread = new WorkerThread(this->settings,this->hConsole,this); */
-/*     /1* connect(thread, &QThread::finished, thread, &QObject::deleteLater); *1/ */
-/* } */
 
 Accel::Accel(HANDLE hConsole, QObject *parent):
     hConsole(hConsole), QObject(parent)
 {
-    /* thread = new WorkerThread(this->settings,this->hConsole,this); */
-    /* connect(thread, &QThread::finished, thread, &QObject::deleteLater); */
 }
-void Accel::start(Settings const settings)
+void Accel::go(Settings const settings)
+{
+    stop();
+    thread = new WorkerThread(settings,this->hConsole,this);
+    thread->start();
+}
+
+void Accel::stop()
 {
     if(thread != NULL)
     {
-        ((Accel::WorkerThread*) thread)->stop();
-        terminate();
+        ((Accel::WorkerThread*) thread)->die();
+        thread->quit();
+        thread->wait();
     }
-    thread = new WorkerThread(settings,this->hConsole,this);
-    thread->start();
-    /* thread = QThread::create(Accel::accel); */
-}
-
-void Accel::end()
-{
-    terminate();
 }
 
 Accel::WorkerThread::WorkerThread(Settings const settings, HANDLE hConsole, QObject *parent):
     settings(settings), hConsole(hConsole), QThread(parent)
 {
-    /* thread = new QThread(this); */
-    /* connect(thread, &QThread::finished, thread, &QObject::deleteLater); */
-    stop_ = false;
+    die_ = false;
 }
 
-void Accel::WorkerThread::stop()
+void Accel::WorkerThread::die()
 {
-    stop_ = true;
+    die_ = true;
 }
 
 
@@ -121,8 +100,7 @@ void Accel::WorkerThread::accel()
     QueryPerformanceCounter(&oldFrameTime);
     QueryPerformanceFrequency(&PCfreq);
 
-    while (interception_receive(context, device = interception_wait(context), &stroke, 1) > 0
-            && !stop_)
+    while (!die_ && interception_receive(context, device = interception_wait(context), &stroke, 1) > 0)
     {
 
         if (interception_is_mouse(device))
