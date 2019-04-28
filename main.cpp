@@ -136,27 +136,32 @@ Settings const * const read_settings(HANDLE const hConsole, char const * const f
     return builder.hbuild();
 }
 
+void accel_go(HANDLE hConsole, Accel * const accel, QString const & path)
+{
+    Settings const * const settings = read_settings(hConsole,path.toLocal8Bit().data());
+    accel->go(*settings);
+    delete settings;
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     QString const filename { "settings.txt" };
 
-    QFileSystemWatcher *watcher = new QFileSystemWatcher(&a);
+    QFileSystemWatcher * const watcher = new QFileSystemWatcher(&a);
     watcher->addPath(filename);
 
-    HANDLE hConsole = get_console();
+    HANDLE const hConsole = get_console();
 
-    Accel * accel = new Accel(hConsole);
+    Accel * const accel = new Accel(hConsole);
 
     QObject::connect(watcher, &QFileSystemWatcher::fileChanged,
         [hConsole,accel]( const QString& path )
         {
-            Settings const * const settings = read_settings(hConsole,path.toLocal8Bit().data());
-            accel->go(*settings);
-            delete settings;
+            accel_go(hConsole, accel, path);
         });
 
-    /* watcher->fileChanged(filename); */
+    accel_go(hConsole, accel, filename);
 
     std::cout << "Enter main event loop now" << std::endl;
     return a.exec();
