@@ -12,3 +12,5 @@ SOURCES += settings.cpp
 SOURCES += utils.cpp
 unix:LIBS += -L libs/x64 -l interception
 TARGET = accel
+target.path = /
+INSTALLS += target

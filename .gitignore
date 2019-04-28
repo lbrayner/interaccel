@@ -8,3 +8,4 @@ accel
 *.lib
 settings.txt
 *.stackdump
+/make
