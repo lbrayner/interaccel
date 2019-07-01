@@ -16,7 +16,7 @@ private:
 
     class WorkerThread;
     HANDLE hConsole;
-    QThread * thread;
+    QThread * thread = NULL;
     QString const process_name;
 
 public:
